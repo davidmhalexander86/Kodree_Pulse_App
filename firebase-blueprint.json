@@ -1,0 +1,58 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information for mini social profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "User identifier matching auth.uid" },
+        "userId": { "type": "string", "description": "User ID matching auth.uid" },
+        "displayName": { "type": "string", "maxLength": 100, "description": "Full display name" },
+        "handle": { "type": "string", "maxLength": 50, "pattern": "^[a-zA-Z0-9_]+$", "description": "Unique username handle" },
+        "email": { "type": "string", "maxLength": 120, "description": "User email address" },
+        "photoURL": { "type": "string", "maxLength": 1000, "description": "Avatar image URL" },
+        "bannerTheme": { "type": "string", "maxLength": 50, "description": "Selected cover banner theme style" },
+        "headline": { "type": "string", "maxLength": 150, "description": "Professional or social headline" },
+        "bio": { "type": "string", "maxLength": 500, "description": "Short bio or about me text" },
+        "location": { "type": "string", "maxLength": 100, "description": "User location" },
+        "website": { "type": "string", "maxLength": 200, "description": "Personal website or portfolio URL" },
+        "pronouns": { "type": "string", "maxLength": 50, "description": "Preferred pronouns" },
+        "statusMessage": { "type": "string", "maxLength": 150, "description": "Current status mood message" },
+        "statusEmoji": { "type": "string", "maxLength": 20, "description": "Status emoji" },
+        "followersCount": { "type": "number", "description": "Number of followers" },
+        "followingCount": { "type": "number", "description": "Number of following accounts" },
+        "likesCount": { "type": "number", "description": "Total profile likes or cheers" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["userId", "displayName", "handle", "createdAt"]
+    },
+    "UserPost": {
+      "title": "UserPost",
+      "description": "Post or status update made by a user",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Post document ID" },
+        "userId": { "type": "string", "description": "Author UID" },
+        "authorName": { "type": "string", "maxLength": 100, "description": "Author display name" },
+        "authorAvatar": { "type": "string", "maxLength": 1000, "description": "Author avatar URL" },
+        "authorHandle": { "type": "string", "maxLength": 50, "description": "Author handle" },
+        "content": { "type": "string", "maxLength": 1000, "description": "Content of the post" },
+        "tag": { "type": "string", "maxLength": 40, "description": "Topic or category tag" },
+        "likes": { "type": "number", "description": "Number of likes on the post" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["userId", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user profile and social card information"
+    },
+    "/users/{userId}/posts/{postId}": {
+      "schema": "UserPost",
+      "description": "Stores posts and updates created by the user"
+    }
+  }
+}

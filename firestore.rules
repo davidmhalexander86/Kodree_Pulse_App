@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data, expectedUserId) {
+      return data.userId == expectedUserId &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.handle is string && data.handle.size() >= 1 && data.handle.size() <= 50 &&
+        (!('email' in data) || (data.email is string && data.email.size() <= 120)) &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000)) &&
+        (!('bannerTheme' in data) || (data.bannerTheme is string && data.bannerTheme.size() <= 50)) &&
+        (!('headline' in data) || (data.headline is string && data.headline.size() <= 150)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 500)) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 100)) &&
+        (!('website' in data) || (data.website is string && data.website.size() <= 200)) &&
+        (!('pronouns' in data) || (data.pronouns is string && data.pronouns.size() <= 50)) &&
+        (!('statusMessage' in data) || (data.statusMessage is string && data.statusMessage.size() <= 150)) &&
+        (!('statusEmoji' in data) || (data.statusEmoji is string && data.statusEmoji.size() <= 20)) &&
+        (!('followersCount' in data) || data.followersCount is number) &&
+        (!('followingCount' in data) || data.followingCount is number) &&
+        (!('likesCount' in data) || data.likesCount is number) &&
+        (!('skills' in data) || (data.skills is list && data.skills.size() <= 20)) &&
+        (!('socialLinks' in data) || data.socialLinks is map);
+    }
+
+    function isValidUserPost(data, expectedUserId) {
+      return data.userId == expectedUserId &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 1000 &&
+        (!('authorName' in data) || (data.authorName is string && data.authorName.size() <= 100)) &&
+        (!('authorAvatar' in data) || (data.authorAvatar is string && data.authorAvatar.size() <= 1000)) &&
+        (!('authorHandle' in data) || (data.authorHandle is string && data.authorHandle.size() <= 50)) &&
+        (!('tag' in data) || (data.tag is string && data.tag.size() <= 40)) &&
+        (!('likes' in data) || data.likes is number);
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+
+      allow create: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().keys().hasAll(['userId', 'displayName', 'handle', 'createdAt']) &&
+        incoming().keys().hasOnly([
+          'id', 'userId', 'displayName', 'handle', 'email', 'photoURL',
+          'bannerTheme', 'headline', 'bio', 'location', 'website', 'pronouns',
+          'statusMessage', 'statusEmoji', 'followersCount', 'followingCount',
+          'likesCount', 'skills', 'socialLinks', 'createdAt', 'updatedAt'
+        ]);
+
+      allow update: if isOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming(), userId) &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'handle', 'photoURL', 'bannerTheme', 'headline',
+          'bio', 'location', 'website', 'pronouns', 'statusMessage',
+          'statusEmoji', 'followersCount', 'followingCount', 'likesCount',
+          'skills', 'socialLinks', 'updatedAt'
+        ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // User Posts subcollection
+      match /posts/{postId} {
+        allow read: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+          isValidId(postId) &&
+          isValidUserPost(incoming(), userId) &&
+          incoming().userId == request.auth.uid &&
+          incoming().keys().hasAll(['userId', 'content', 'createdAt']) &&
+          incoming().keys().hasOnly([
+            'id', 'userId', 'authorName', 'authorAvatar', 'authorHandle',
+            'content', 'tag', 'likes', 'createdAt', 'updatedAt'
+          ]);
+
+        allow update: if isOwner(userId) &&
+          isValidId(postId) &&
+          isValidUserPost(incoming(), userId) &&
+          incoming().userId == existing().userId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'content', 'tag', 'likes', 'updatedAt'
+          ]);
+
+        allow delete: if isOwner(userId) && isValidId(postId);
+      }
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read: if isSignedIn();
+    }
+  }
+}

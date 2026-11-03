@@ -1,0 +1,6 @@
+{
+  "name": "PulseProfile",
+  "description": "A mini social media profile app where users can log in, customize their profile, share posts and status updates, and showcase their social links.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
